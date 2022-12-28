@@ -12,9 +12,9 @@ impl DBConnection for MySqlPool {
         query(CREATE_TABLE).execute(self).await?;
         Ok(())
     }
-    async fn create_user(&self, email: &str, hash: &str, is_admin: bool) -> Result<()> {
+    async fn create_user(&self, username: &str, hash: &str, is_admin: bool) -> Result<()> {
         query(INSERT_USER)
-            .bind(email)
+            .bind(username)
             .bind(hash)
             .bind(is_admin)
             .execute(self)
@@ -23,7 +23,7 @@ impl DBConnection for MySqlPool {
     }
     async fn update_user(&self, user: &User) -> Result<()> {
         query(UPDATE_USER)
-            .bind(&user.email)
+            .bind(&user.username)
             .bind(&user.password)
             .bind(user.is_admin)
             .bind(user.id)
@@ -36,8 +36,8 @@ impl DBConnection for MySqlPool {
         query(REMOVE_BY_ID).bind(user_id).execute(self).await?;
         Ok(())
     }
-    async fn delete_user_by_email(&self, email: &str) -> Result<()> {
-        query(REMOVE_BY_EMAIL).bind(email).execute(self).await?;
+    async fn delete_user_by_username(&self, username: &str) -> Result<()> {
+        query(REMOVE_BY_EMAIL).bind(username).execute(self).await?;
         Ok(())
     }
     async fn get_user_by_id(&self, user_id: i32) -> Result<User> {
@@ -45,9 +45,9 @@ impl DBConnection for MySqlPool {
 
         Ok(user)
     }
-    async fn get_user_by_email(&self, email: &str) -> Result<User> {
+    async fn get_user_by_username(&self, username: &str) -> Result<User> {
         let user = query_as(SELECT_BY_EMAIL)
-            .bind(email)
+            .bind(username)
             .fetch_one(self)
             .await?;
         Ok(user)

@@ -90,10 +90,13 @@ impl<'a> Auth<'a> {
     #[throws(Error)]
     pub async fn login(&self, form: &Login) {
         let key = self.users.login(form).await?;
-        let user = self.users.get_by_email(&form.email.to_lowercase()).await?;
+        let user = self
+            .users
+            .get_by_username(&form.username.to_lowercase())
+            .await?;
         let session = Session {
             id: user.id,
-            email: user.email,
+            username: user.username,
             auth_key: key,
             time_stamp: now(),
         };
@@ -115,11 +118,14 @@ impl<'a> Auth<'a> {
     #[throws(Error)]
     pub async fn login_for(&self, form: &Login, time: Duration) {
         let key = self.users.login_for(form, time).await?;
-        let user = self.users.get_by_email(&form.email.to_lowercase()).await?;
+        let user = self
+            .users
+            .get_by_username(&form.username.to_lowercase())
+            .await?;
 
         let session = Session {
             id: user.id,
-            email: user.email,
+            username: user.username,
             auth_key: key,
             time_stamp: now(),
         };
@@ -265,22 +271,19 @@ impl<'a> Auth<'a> {
         }
     }
 
-    /// Changes the email of the currently authenticated user
+    /// Changes the username of the currently authenticated user
     /// ```
     /// # use rocket_auth::Auth;
     /// # fn func(auth: Auth) {
-    /// auth.change_email("new@email.com".into());
+    /// auth.change_username("new@username.com".into());
     /// # }
     /// ```
     #[throws(Error)]
-    pub async fn change_email(&self, email: String) {
+    pub async fn change_username(&self, username: String) {
         if self.is_auth() {
-            if !validator::validate_email(&email) {
-                throw!(Error::InvalidEmailAddressError)
-            }
             let session = self.get_session()?;
             let mut user = self.users.get_by_id(session.id).await?;
-            user.email = email.to_lowercase();
+            user.username = username.to_lowercase();
             self.users.modify(&user).await?;
         } else {
             throw!(Error::UnauthorizedError)
@@ -302,13 +305,13 @@ impl<'a> Auth<'a> {
     }
 
     /// Compares the password of the currently authenticated user with another password.
-    /// Useful for checking password before resetting email/password.
+    /// Useful for checking password before resetting username/password.
     /// To avoid bruteforcing this function should not be directly accessible from a route.
     /// Additionally, it is good to implement rate limiting on routes using this function.
     #[throws(Error)]
     pub async fn compare_password(&self, password: &str) -> bool {
         if self.is_auth() {
-            let session = self.get_session()?; 
+            let session = self.get_session()?;
             let user: User = self.users.get_by_id(session.id).await?;
             user.compare_password(password)?
         } else {

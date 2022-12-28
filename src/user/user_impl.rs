@@ -12,7 +12,7 @@ impl User {
     /// In case the user is authenticated,
     /// you can change it more easily with [`change_password`](`super::auth::Auth::change_password`).
     /// This function will fail in case the password is not secure enough.
-    /// 
+    ///
     /// ```rust
     /// # use rocket::{State, post};
     /// # use rocket_auth::{Error, Users};
@@ -34,7 +34,7 @@ impl User {
     }
 
     /// Compares the password of the currently authenticated user with a another password.
-    /// Useful for checking password before resetting email/password.
+    /// Useful for checking password before resetting username/password.
     /// To avoid bruteforcing this function should not be directly accessible from a route.
     /// Additionally, it is good to implement rate limiting on routes using this function.
     #[throws(Error)]
@@ -55,41 +55,37 @@ impl User {
     pub fn id(&self) -> i32 {
         self.id
     }
-    /// This is an accessor field for the private `email` field.
-    /// This field is private so an email cannot be updated without checking whether it is valid.
+    /// This is an accessor field for the private `username` field.
+    /// This field is private so an username cannot be updated without checking whether it is valid.
     /// ```rust
     /// # use rocket::{State, get};
     /// # use rocket_auth::{Error, User};
-    /// #[get("/show-my-email")]
-    /// fn show_my_email(user: User) -> String {
-    ///     format!("Your user_id is: {}", user.email())
+    /// #[get("/show-my-username")]
+    /// fn show_my_username(user: User) -> String {
+    ///     format!("Your user_id is: {}", user.username())
     /// }
     /// ```
-    pub fn email(&self) -> &str {
-        &self.email
+    pub fn username(&self) -> &str {
+        &self.username
     }
 
-    /// This functions allows to easily modify the email of a user.
-    /// In case the input is not a valid email, it will return an error.
-    /// In case the user corresponds to the authenticated client, it's easier to use [`Auth::change_email`].
+    /// This functions allows to easily modify the username of a user.
+    /// In case the input is not a valid username, it will return an error.
+    /// In case the user corresponds to the authenticated client, it's easier to use [`Auth::change_username`].
     /// ```rust
     /// # use rocket::{State, get};
     /// # use rocket_auth::{Error, Auth};
-    /// #[get("/set-email/<email>")]
-    /// async fn set_email(email: String, auth: Auth<'_>) -> Result<String, Error> {
+    /// #[get("/set-username/<username>")]
+    /// async fn set_username(username: String, auth: Auth<'_>) -> Result<String, Error> {
     ///     let mut user = auth.get_user().await.unwrap();
-    ///     user.set_email(&email)?;
+    ///     user.set_username(&username)?;
     ///     auth.users.modify(&user).await?;
-    ///     Ok("Your user email was changed".into())
+    ///     Ok("Your user username was changed".into())
     /// }
     /// ```
     #[throws(Error)]
-    pub fn set_email(&mut self, email: &str) {
-        if validator::validate_email(email) {
-            self.email = email.to_lowercase();
-        } else {
-            throw!(Error::InvalidEmailAddressError)
-        }
+    pub fn set_username(&mut self, username: &str) {
+        self.username = username.to_lowercase();
     }
 }
 
@@ -99,8 +95,8 @@ impl Debug for User {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "User {{ id: {:?}, email: {:?}, is_admin: {:?}, password: \"*****\" }}",
-            self.id, self.email, self.is_admin
+            "User {{ id: {:?}, username: {:?}, is_admin: {:?}, password: \"*****\" }}",
+            self.id, self.username, self.is_admin
         )
     }
 }
@@ -144,8 +140,8 @@ impl<'r> FromRequest<'r> for AdminUser {
     }
 }
 
-use std::ops::*;
 use argon2::verify_encoded;
+use std::ops::*;
 
 impl Deref for AdminUser {
     type Target = User;

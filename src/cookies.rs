@@ -18,12 +18,11 @@ pub struct Session {
     pub time_stamp: i64,
     /// The user id as it is stored on the database.
     pub id: i32,
-    /// The user email.
-    pub email: String,
+    /// The user username.
+    pub username: String,
     /// A random authentication token key.
     pub auth_key: String,
 }
-
 
 #[async_trait]
 impl<'r> FromRequest<'r> for Session {

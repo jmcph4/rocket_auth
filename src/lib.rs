@@ -115,7 +115,7 @@
 //! #[get("/special-content")]
 //! fn special_content(option: Option<User>) -> String {
 //!     if let Some(user) = option {
-//!         format!("hello, {}.", user.email())
+//!         format!("hello, {}.", user.username())
 //!     } else {
 //!         "hello, anonymous user".into()
 //!     }
@@ -130,10 +130,9 @@
 //! # use rocket_auth::AdminUser;
 //! #[get("/admin-panel")]
 //! fn admin_panel(user: AdminUser) -> String {
-//!    format!("Hello {}.", user.email())
+//!    format!("Hello {}.", user.username())
 //! }
 //! ```
-
 
 mod cookies;
 mod db;
@@ -170,7 +169,7 @@ pub use error::Error;
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Hash, PartialOrd, Ord)]
 pub struct User {
     pub id: i32,
-    email: String,
+    username: String,
     pub is_admin: bool,
     #[serde(skip_serializing)]
     password: String,
@@ -183,7 +182,7 @@ pub struct User {
 /// # use rocket_auth::AdminUser;
 /// #[get("/admin-panel")]
 /// fn admin_panel(user: AdminUser) -> String {
-///    format!("Hello {}.", user.email())
+///    format!("Hello {}.", user.username())
 /// }
 /// ```
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Hash, PartialOrd, Ord)]

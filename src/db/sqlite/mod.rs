@@ -6,13 +6,13 @@ use sql::*;
 use tokio::sync::Mutex;
 
 #[cfg(feature = "rusqlite")]
-use std::convert::{TryFrom, TryInto};
-#[cfg(feature = "rusqlite")]
-use tokio::task::block_in_place;
+use rusqlite::Row;
 #[cfg(feature = "rusqlite")]
 use rusqlite::*;
 #[cfg(feature = "rusqlite")]
-use rusqlite::Row;
+use std::convert::{TryFrom, TryInto};
+#[cfg(feature = "rusqlite")]
+use tokio::task::block_in_place;
 
 #[cfg(feature = "rusqlite")]
 impl<'a> TryFrom<&rusqlite::Row<'a>> for crate::User {
@@ -20,7 +20,7 @@ impl<'a> TryFrom<&rusqlite::Row<'a>> for crate::User {
     fn try_from(row: &Row) -> Result<User, rusqlite::Error> {
         Ok(User {
             id: row.get(0)?,
-            email: row.get(1)?,
+            username: row.get(1)?,
             password: row.get(2)?,
             is_admin: row.get(3)?,
         })
@@ -36,9 +36,9 @@ impl DBConnection for Mutex<rusqlite::Connection> {
         Ok(())
     }
 
-    async fn create_user(&self, email: &str, hash: &str, is_admin: bool) -> Result<()> {
+    async fn create_user(&self, username: &str, hash: &str, is_admin: bool) -> Result<()> {
         let conn = self.lock().await;
-        block_in_place(|| conn.execute(INSERT_USER, params![email, hash, is_admin]))?;
+        block_in_place(|| conn.execute(INSERT_USER, params![username, hash, is_admin]))?;
 
         Ok(())
     }
@@ -48,7 +48,7 @@ impl DBConnection for Mutex<rusqlite::Connection> {
         block_in_place(|| {
             conn.execute(
                 UPDATE_USER,
-                params![user.id, user.email, user.password, user.is_admin],
+                params![user.id, user.username, user.password, user.is_admin],
             )
         })?;
         Ok(())
@@ -60,9 +60,9 @@ impl DBConnection for Mutex<rusqlite::Connection> {
         Ok(())
     }
 
-    async fn delete_user_by_email(&self, email: &str) -> Result<()> {
+    async fn delete_user_by_username(&self, username: &str) -> Result<()> {
         let conn = self.lock().await;
-        block_in_place(|| conn.execute(REMOVE_BY_EMAIL, params![email]))?;
+        block_in_place(|| conn.execute(REMOVE_BY_EMAIL, params![username]))?;
         Ok(())
     }
 
@@ -78,12 +78,12 @@ impl DBConnection for Mutex<rusqlite::Connection> {
         Ok(user)
     }
 
-    async fn get_user_by_email(&self, email: &str) -> Result<User> {
+    async fn get_user_by_username(&self, username: &str) -> Result<User> {
         let conn = self.lock().await;
         let user = block_in_place(|| {
             conn.query_row(
                 SELECT_BY_EMAIL, //
-                params![email],
+                params![username],
                 |row| row.try_into(),
             )
         })?;
@@ -102,10 +102,10 @@ impl DBConnection for Mutex<SqliteConnection> {
         println!("table created");
         Ok(())
     }
-    async fn create_user(&self, email: &str, hash: &str, is_admin: bool) -> Result<()> {
+    async fn create_user(&self, username: &str, hash: &str, is_admin: bool) -> Result<()> {
         let mut db = self.lock().await;
         query(INSERT_USER)
-            .bind(email)
+            .bind(username)
             .bind(hash)
             .bind(is_admin)
             .execute(&mut *db)
@@ -116,7 +116,7 @@ impl DBConnection for Mutex<SqliteConnection> {
         let mut db = self.lock().await;
         query(UPDATE_USER)
             .bind(user.id)
-            .bind(&user.email)
+            .bind(&user.username)
             .bind(&user.password)
             .bind(user.is_admin)
             .execute(&mut *db)
@@ -130,9 +130,9 @@ impl DBConnection for Mutex<SqliteConnection> {
             .await?;
         Ok(())
     }
-    async fn delete_user_by_email(&self, email: &str) -> Result<()> {
+    async fn delete_user_by_username(&self, username: &str) -> Result<()> {
         query(REMOVE_BY_EMAIL)
-            .bind(email)
+            .bind(username)
             .execute(&mut *self.lock().await)
             .await?;
         Ok(())
@@ -147,10 +147,10 @@ impl DBConnection for Mutex<SqliteConnection> {
 
         Ok(user)
     }
-    async fn get_user_by_email(&self, email: &str) -> Result<User> {
+    async fn get_user_by_username(&self, username: &str) -> Result<User> {
         let mut db = self.lock().await;
         let user = query_as(SELECT_BY_EMAIL)
-            .bind(email)
+            .bind(username)
             .fetch_one(&mut *db)
             .await?;
         Ok(user)
@@ -165,9 +165,9 @@ impl DBConnection for SqlitePool {
             .await?;
         Ok(())
     }
-    async fn create_user(&self, email: &str, hash: &str, is_admin: bool) -> Result<()> {
+    async fn create_user(&self, username: &str, hash: &str, is_admin: bool) -> Result<()> {
         query(INSERT_USER)
-            .bind(email)
+            .bind(username)
             .bind(hash)
             .bind(is_admin)
             .execute(self)
@@ -177,7 +177,7 @@ impl DBConnection for SqlitePool {
     async fn update_user(&self, user: &User) -> Result<()> {
         query(UPDATE_USER)
             .bind(user.id)
-            .bind(&user.email)
+            .bind(&user.username)
             .bind(&user.password)
             .bind(user.is_admin)
             .execute(self)
@@ -191,9 +191,9 @@ impl DBConnection for SqlitePool {
             .await?;
         Ok(())
     }
-    async fn delete_user_by_email(&self, email: &str) -> Result<()> {
+    async fn delete_user_by_username(&self, username: &str) -> Result<()> {
         query(REMOVE_BY_EMAIL) //
-            .bind(email)
+            .bind(username)
             .execute(self)
             .await?;
         Ok(())
@@ -205,8 +205,11 @@ impl DBConnection for SqlitePool {
             .await?;
         Ok(user)
     }
-    async fn get_user_by_email(&self, email: &str) -> Result<User> {
-        let user = query_as(SELECT_BY_EMAIL).bind(email).fetch_one(self).await;
+    async fn get_user_by_username(&self, username: &str) -> Result<User> {
+        let user = query_as(SELECT_BY_EMAIL)
+            .bind(username)
+            .fetch_one(self)
+            .await;
         println!("user: {:?}", user);
         Ok(user?)
     }

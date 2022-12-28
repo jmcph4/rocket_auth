@@ -153,29 +153,29 @@ impl Users {
         users
     }
 
-    /// It queries a user by their email.
+    /// It queries a user by their username.
     /// ```
     /// # use rocket::{State, get};
     /// # use rocket_auth::{Error, Users};
-    /// #[get("/user-information/<email>")]
-    /// async fn user_information(email: String, users: &State<Users>) -> Result<String, Error> {
+    /// #[get("/user-information/<username>")]
+    /// async fn user_information(username: String, users: &State<Users>) -> Result<String, Error> {
     ///        
-    ///     let user = users.get_by_email(&email).await?;
+    ///     let user = users.get_by_username(&username).await?;
     ///     Ok(format!("{:?}", user))
     /// }
     /// # fn main() {}
     /// ```
     #[throws(Error)]
-    pub async fn get_by_email(&self, email: &str) -> User {
-        self.conn.get_user_by_email(email).await?
+    pub async fn get_by_username(&self, username: &str) -> User {
+        self.conn.get_user_by_username(username).await?
     }
 
-    /// It queries a user by their email.
+    /// It queries a user by their username.
     /// ```
     /// # use rocket::{State, get};
     /// # use rocket_auth::{Error, Users};
-    /// # #[get("/user-information/<email>")]
-    /// # async fn user_information(email: String, users: &State<Users>) -> Result<(), Error> {
+    /// # #[get("/user-information/<username>")]
+    /// # async fn user_information(username: String, users: &State<Users>) -> Result<(), Error> {
     ///  let user = users.get_by_id(3).await?;
     ///  format!("{:?}", user);
     /// # Ok(())
@@ -191,20 +191,20 @@ impl Users {
     /// ```rust
     /// # use rocket::{State, post};
     /// # use rocket_auth::{Error, Users};
-    /// #[post("/create_admin/<email>/<password>")]
-    /// async fn create_admin(email: String, password: String, users: &State<Users>) -> Result<String, Error> {
-    ///     users.create_user(&email, &password, true).await?;
+    /// #[post("/create_admin/<username>/<password>")]
+    /// async fn create_admin(username: String, password: String, users: &State<Users>) -> Result<String, Error> {
+    ///     users.create_user(&username, &password, true).await?;
     ///     Ok("User created successfully".into())
     /// }
     /// # fn main() {}
     /// ```
     #[throws(Error)]
-    pub async fn create_user(&self, email: &str, password: &str, is_admin: bool) {
+    pub async fn create_user(&self, username: &str, password: &str, is_admin: bool) {
         let password = password.as_bytes();
         let salt = rand_string(30);
         let config = argon2::Config::default();
         let hash = argon2::hash_encoded(password, salt.as_bytes(), &config).unwrap();
-        self.conn.create_user(email, &hash, is_admin).await?;
+        self.conn.create_user(username, &hash, is_admin).await?;
     }
 
     /// Deletes a user from de database. Note that this method won't delete the session.
@@ -227,7 +227,7 @@ impl Users {
     /// # use rocket_auth::{Users, Error};
     /// # async fn func(users: Users) -> Result<(), Error> {
     /// let mut user = users.get_by_id(4).await?;
-    /// user.set_email("new@email.com");
+    /// user.set_username("new@username.com");
     /// user.set_password("new password");
     /// users.modify(&user).await?;
     /// # Ok(())}

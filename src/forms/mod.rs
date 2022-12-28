@@ -1,19 +1,16 @@
 use crate::prelude::*;
 
-
 /// The `Login` form is used along with the [`Auth`] guard to authenticate users.
 #[derive(FromForm, Deserialize, Clone, Hash, PartialEq, Eq, Validate)]
 pub struct Login {
-    #[validate(email)]
-    pub email: String,
+    pub username: String,
     pub(crate) password: String,
 }
 
 /// The `Signup` form is used along with the [`Auth`] guard to create new users.
 #[derive(FromForm, Deserialize, Clone, PartialEq, Eq, Hash, Validate)]
 pub struct Signup {
-    #[validate(email)]
-    pub email: String,
+    pub username: String,
     #[validate(
         custom = "is_long",
         custom = "has_number",
@@ -26,8 +23,8 @@ impl Debug for Signup {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Signup {{ email: {:?}, password: \"*****\" }}",
-            self.email
+            "Signup {{ username: {:?}, password: \"*****\" }}",
+            self.username
         )
     }
 }
@@ -35,8 +32,8 @@ impl Debug for Login {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Signup {{ email: {:?}, password: \"*****\" }}",
-            self.email
+            "Signup {{ username: {:?}, password: \"*****\" }}",
+            self.username
         )
     }
 }
@@ -44,7 +41,7 @@ impl Debug for Login {
 impl From<Signup> for Login {
     fn from(form: Signup) -> Login {
         Login {
-            email: form.email,
+            username: form.username,
             password: form.password,
         }
     }
@@ -53,7 +50,7 @@ impl From<Signup> for Login {
 impl From<Login> for Signup {
     fn from(form: Login) -> Signup {
         Self {
-            email: form.email,
+            username: form.username,
             password: form.password,
         }
     }
@@ -62,7 +59,7 @@ impl From<Login> for Signup {
 impl<T: Deref<Target = Signup>> From<T> for Login {
     fn from(form: T) -> Login {
         Login {
-            email: form.email.clone(),
+            username: form.username.clone(),
             password: form.password.clone(),
         }
     }
